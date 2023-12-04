@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     [SerializeField] Transform[] laneTransforms;
     [SerializeField] Transform groundCheckTransform;
     [SerializeField] LayerMask groundCheckMask;
+    [SerializeField] Animator animator;
 
     PlayerInput playerInput;
     Vector3 destination;
@@ -48,16 +49,25 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        if (!IsOnGround())
+        {
+            animator.SetBool("isOnGround", false);
+            return;
+        }
+        animator.SetBool("isOnGround", true);
+
         float transformX = Mathf.Lerp(transform.position.x, destination.x, moveSpeed * Time.deltaTime);
         transform.position = new Vector3(transformX, transform.position.y, transform.position.z);
     }
 
     private void MovePerformed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (!IsOnGround())
+        {
+            return;
+        }
         float inputValue = obj.ReadValue<float>();
         Move(inputValue);
-
-
     }
 
     private void Move(float inputValue)
@@ -80,14 +90,16 @@ public class Player : MonoBehaviour
 
     private void JumpPerformed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
-        if (!IsOnGround()) { return; }
-
-        Rigidbody rigidbody = GetComponent<Rigidbody>();
-        if (rigidbody != null)
+        if (IsOnGround())
         {
-            float jumpSpeed = Mathf.Sqrt(2 * jumpHeight * Physics.gravity.magnitude);
-            rigidbody.AddForce(Vector3.up * jumpSpeed, ForceMode.VelocityChange);
+            Rigidbody rigidbody = GetComponent<Rigidbody>();
+            if (rigidbody != null)
+            {
+                float jumpSpeed = Mathf.Sqrt(2 * jumpHeight * Physics.gravity.magnitude);
+                rigidbody.AddForce(Vector3.up * jumpSpeed, ForceMode.VelocityChange);
+            }
         }
+        
     }
 
     private bool IsOnGround()
