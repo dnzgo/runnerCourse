@@ -19,6 +19,10 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] GameObject streetLight;
     [SerializeField] Transform[] lightSpawnPoints;
 
+    [Header("Threats")]
+    [SerializeField] Threat[] threats;
+    [SerializeField] Transform[] laneTransforms;
+
     Vector3 moveDirection;
 
     private void Start()
@@ -34,6 +38,46 @@ public class WorldGenerator : MonoBehaviour
             
             nextBlockPosition += moveDirection * blockLenght;
         }
+
+        StartSpawnThreats();
+
+    }
+
+    private void StartSpawnThreats()
+    {
+        // loop through all the threats
+        // start periodically spawn threat based on their spawn interval
+        // this requires a coroutine.
+        foreach (Threat threat in threats)
+        {
+            StartCoroutine(SpawnThreatCoroutine(threat));
+        }
+    }
+
+    IEnumerator SpawnThreatCoroutine(Threat threatToSpawn)
+    {
+        while (true)
+        {
+            Threat newThreat = Instantiate(threatToSpawn, GetRandomLane(), Quaternion.identity);
+
+            newThreat.GetMovementComponent().SetDestination(EndPoint.position);
+            newThreat.GetMovementComponent().SetMoveDirection(moveDirection);
+
+            yield return new WaitForSeconds(newThreat.spawnInterval);
+        }
+    }
+
+    Vector3 GetRandomLane()
+    {
+        if (laneTransforms.Length == 0)
+        {
+            return StartPoint.position;
+        }
+        int pick = Random.Range(0, laneTransforms.Length);
+        Vector3 pickedLane = laneTransforms[pick].position;
+
+        return pickedLane + StartPoint.position;
+
     }
 
     private GameObject SpawnNewBlock(Vector3 spawnPosition, Vector3 moveDirection)
@@ -90,7 +134,7 @@ public class WorldGenerator : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject != null)
+        if (other.gameObject != null && other.gameObject.tag == "RoadBlock")
         {
             GameObject newBlock = SpawnNewBlock(other.transform.position, moveDirection);
             float newBlockHalfWidth = newBlock.GetComponent<Renderer>().bounds.size.z / 2f;
